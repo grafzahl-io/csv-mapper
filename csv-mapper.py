@@ -107,6 +107,24 @@ def getMapping():
   field_mappings = json.load(static_file)
   return field_mappings
 
+def getMergeConfig():
+  # get merge config
+  merge_config_file = open("config/csv-additional-related-mapping.json")
+  merge_config = json.load(merge_config_file)
+  return merge_config
+
+def findRowToMerge(row, searchterm, search_in, operator, targetrows):
+  # use second csv to find a matching row to merge into
+  for trow in targetrows:
+    if operator == "contains":
+      if searchterm re.search(searchterm, trow[search_in]):
+        return trow
+    if operator == "equal":
+      if trow[search_in] == searchterm:
+        return trow
+
+  return FALSE
+
 def getAvailableStatics():
   # get static data to impelment to current import
   static_file = open("config/csv-static-mappings.json")
@@ -143,6 +161,20 @@ def mapRow(row):
       textdata.close()
     else:
       new_row[statics] = static_fields[statics]
+
+  # merge mapped
+  merge_config = getMergeConfig()
+  if len(merge_config):
+    for merge_c in merge_config:
+      merge_file = open("config/" + merge_c["related-data-file"])
+      merge_data = json.load(merge_file)
+
+      # search for matching data 
+      res = findRowToMerge(row, row[merge_c["matching-rule-in-main"]["column"]], merge_c["related-data-file-id-column"], merge_c["matching-rule-in-main"]["operator"], merge_data)
+      # map res and put into new row
+      if res:
+        new_row = new_row + res
+
   try:
     for mapped in mapping:
       source_value = row[mapped]
@@ -154,52 +186,6 @@ def mapRow(row):
           applyMapped(new_row, multi_key, source_value, value_mappings, imagefield, imagepath)
   except KeyError:
     print("The key from the mapping named does not exist")
-
-
-  # correct all qty that are below 0 to 0
-  if int(new_row['quantity']) <= 0:
-    new_row['quantity'] = 0;
-
-  # ONLY USE THIS, IF THE SOURCE PRICE FORMAT IS GERMAN (,)
-  # format the prices fields correctly
-  #if new_row['start_price']:
-  #  new_row['start_price'] = "{:10.2f}".format(locale.atof(new_row['start_price'])).strip()
-    
-  # ONLY USE THIS, IF THE SOURCE PRICE FORMAT IS GERMAN (,)
-  #if new_row['reserve_price']:
-  #q  new_row['reserve_price'] = "{:10.2f}".format(locale.atof(new_row['reserve_price'])).strip()
-
-  # do not allow buyout prices at 0
-  if not new_row['buyout_price']:
-    return False
-
-  # only allow if title is set
-  if not new_row['name']:
-    return False
-
-  # ONLY USE THIS, IF THE SOURCE PRICE FORMAT IS GERMAN (,)
-  #if new_row['buyout_price']:
-  #  new_row['buyout_price'] = "{:10.2f}".format(locale.atof(new_row['buyout_price'])).strip()
-
-  # randomly set hp features
-  if random.choices([True, False], [0.05, 0.95])[0]:
-    new_row['hpfeat'] = 1
-  else: 
-    new_row['hpfeat'] = 0
-
-  # randomly set cat features
-  if random.choices([True, False], [0.05, 0.95])[0]:
-    print("is category feature")
-    new_row['catfeat'] = 1
-  else:
-    print("is not category feature")
-    new_row['catfeat'] = 0
-
-  # skip if category cannot be found in the mapping
-  if new_row['category_id'] and new_row['category_id'] in value_mappings['category_id'].values():
-    return new_row
-  else:
-    return False
 
   return new_row
 
