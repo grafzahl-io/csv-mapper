@@ -198,7 +198,7 @@ def mapRow(row):
         header = merge_data[0]
         # @todo mapping through available methods again to inject the related data
         related_row = dict(zip(header, res))
-        print(related_row)
+        # print(related_row)
         try:
           for mapped in mapping:
             source_value = related_row[mapped]
@@ -238,13 +238,14 @@ def mapRow(row):
     os.chdir(image_dir)
     current_handle = new_row["Handle"]
     new_row["Handle"] = [current_handle]
-    for file in glob.glob('base_model_name*'):
-      product_images.push(file)
+
+    for file in glob.glob(base_model_name + '*'):
+      product_images.append(file)
       # also push the handle again @todo attention this has relations to variable config
-      new_row["Handle"].push(current_handle)
+      new_row["Handle"].append(current_handle)
 
     # for output into shopify, every of these images needs to have a separate row in csv
-    new_row['Image Src'] = product_images
+    new_row['Image Src'] = imagepath + product_images
 
   return new_row
 
