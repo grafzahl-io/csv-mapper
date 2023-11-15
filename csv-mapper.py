@@ -29,6 +29,8 @@ import argparse
 import locale
 import os
 import random
+import re
+import glob
 
 # change this if the price format is not in german
 locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
@@ -117,7 +119,7 @@ def findRowToMerge(row, searchterm, search_in, operator, targetrows):
   # use second csv to find a matching row to merge into
   for trow in targetrows:
     if operator == "contains":
-      if searchterm re.search(searchterm, trow[search_in]):
+      if re.search(searchterm, trow[search_in]):
         return trow
     if operator == "equal":
       if trow[search_in] == searchterm:
@@ -147,7 +149,13 @@ def applyMapped(new_row, dest_key, source_value, value_mappings, imagefield, ima
 
   return new_row
 
+def canRowBeImported(row):
+  return len(row["Productname"]) > 0
+
 def mapRow(row):
+  if not canRowBeImported(row):
+    return False
+
   static_fields = getAvailableStatics()
   mapping = getMapping()
   value_mappings = mapValues()
@@ -164,9 +172,11 @@ def mapRow(row):
 
   # merge mapped
   merge_config = getMergeConfig()
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
   if len(merge_config):
     for merge_c in merge_config:
-      merge_file = open("config/" + merge_c["related-data-file"])
+      relatedfile_fullpath = os.path.join(BASE_DIR,merge_c["related-data-file"])
+      merge_file = open(relatedfile_fullpath)
       merge_data = json.load(merge_file)
 
       # search for matching data 
@@ -187,10 +197,31 @@ def mapRow(row):
   except KeyError:
     print("The key from the mapping named does not exist")
 
+  # randomly set hp features
+  if row["Productname"]:
+    # get the second word of product name to get image name
+    base_model_name = row["Productname"].split(" ")[1]
+    # find all filenames that exsist in /source/images with the base_model_name
+    product_images = []
+    os.chdir('./source/images')
+    current_handle = new_row["Handle"]
+    new_row["Handle"] = [current_handle]
+    for file in glob.glob('base_model_name*'):
+      product_images.push(file)
+      # also push the handle again @todo attention this has relations to variable config
+      new_row["Handle"].push(current_handle)
+
+    # for output into shopify, every of these images needs to have a separate row in csv
+    new_row['image'] = product_images
+
   return new_row
 
 def startMapping():
-    with open (sourcefile, 'r') as filein, open (destinationfile, 'w', newline='') as fileout:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    sourcefile_fullpath = os.path.join(BASE_DIR,sourcefile)
+    distfile_fullpath = os.path.join(BASE_DIR,destinationfile)
+
+    with open (sourcefile_fullpath, 'r') as filein, open (distfile_fullpath, 'w', newline='') as fileout:
         csvin = csv.DictReader(filein, skipinitialspace=True)
         
         csvout = csv.DictWriter(fileout, fieldnames = dataheader)

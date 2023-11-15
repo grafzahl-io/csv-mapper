@@ -23,5 +23,10 @@ destination would be the destination category key
 
 quick start:
 ```
-python ./csv-mapper.py source_file.csv destination_file.csv --imagepath="https://yourhost.com/temp/" --imagefield="image"
+make init
+make install
+python ./csv-mapper.py ./source/source_file.csv ./dist/destination_file.csv --imagepath="https://yourhost.com/images/" --imagefield="image"
 ```
+
+### improvement plans
+- needs to be improved an parametrized at many points
