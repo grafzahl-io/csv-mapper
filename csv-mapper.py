@@ -117,15 +117,20 @@ def getMergeConfig():
 
 def findRowToMerge(row, searchterm, search_in, operator, targetrows):
   # use second csv to find a matching row to merge into
-  for trow in targetrows:
+  header = targetrows[0]
+  for trow in targetrows[1:]:
+    print(header)
+    print(search_in)
+    print(operator)
+    print(trow)
     if operator == "contains":
-      if re.search(searchterm, trow[search_in]):
+      if re.search(searchterm, trow[header.index(search_in)]):
         return trow
     if operator == "equal":
-      if trow[search_in] == searchterm:
+      if trow[header.index(search_in)] == searchterm:
         return trow
 
-  return FALSE
+  return False
 
 def getAvailableStatics():
   # get static data to impelment to current import
@@ -177,7 +182,8 @@ def mapRow(row):
     for merge_c in merge_config:
       relatedfile_fullpath = os.path.join(BASE_DIR,merge_c["related-data-file"])
       merge_file = open(relatedfile_fullpath)
-      merge_data = json.load(merge_file)
+      csv_data = csv.reader(merge_file, delimiter=",")
+      merge_data = list(csv_data)
 
       # search for matching data 
       res = findRowToMerge(row, row[merge_c["matching-rule-in-main"]["column"]], merge_c["related-data-file-id-column"], merge_c["matching-rule-in-main"]["operator"], merge_data)
