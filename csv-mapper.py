@@ -105,13 +105,17 @@ dataheader=[
 
 def getMapping():
   # get mapping from json file
-  static_file = open('config/csv-field-mappings.json')
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  field_handle = os.path.join(BASE_DIR, "config/csv-field-mappings.json")
+  static_file = open(field_handle)
   field_mappings = json.load(static_file)
   return field_mappings
 
 def getMergeConfig():
   # get merge config
-  merge_config_file = open("config/csv-additional-related-mapping.json")
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  merge_config_handle = os.path.join(BASE_DIR, "config/csv-additional-related-mapping.json")
+  merge_config_file = open(merge_config_handle)
   merge_config = json.load(merge_config_file)
   return merge_config
 
@@ -119,10 +123,6 @@ def findRowToMerge(row, searchterm, search_in, operator, targetrows):
   # use second csv to find a matching row to merge into
   header = targetrows[0]
   for trow in targetrows[1:]:
-    print(header)
-    print(search_in)
-    print(operator)
-    print(trow)
     if operator == "contains":
       if re.search(searchterm, trow[header.index(search_in)]):
         return trow
@@ -134,21 +134,28 @@ def findRowToMerge(row, searchterm, search_in, operator, targetrows):
 
 def getAvailableStatics():
   # get static data to impelment to current import
-  static_file = open("config/csv-static-mappings.json")
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  static_mapping_handle = os.path.join(BASE_DIR, "config/csv-static-mappings.json")
+  static_file = open(static_mapping_handle)
   static_fields = json.load(static_file)
   return static_fields
 
 def mapValues():
-  static_file = open("config/csv-list-mappings.json")
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  static_list_handle = os.path.join(BASE_DIR, "config/csv-list-mappings.json")
+  static_file = open(static_list_handle)
   value_mappings = json.load(static_file)
   return value_mappings
 
 def applyMapped(new_row, dest_key, source_value, value_mappings, imagefield, imagepath):
   new_row[dest_key] = source_value
-  if dest_key in value_mappings:
-    if source_value in value_mappings[dest_key]:
-      new_row[dest_key] = value_mappings[dest_key][source_value]
-      
+
+  if bool(value_mappings):
+    if dest_key in value_mappings:
+      if source_value in value_mappings[dest_key]:
+        new_row[dest_key] = value_mappings[dest_key][source_value]
+        
+  print(new_row)
   if dest_key == imagefield and imagepath:
     new_row[dest_key] = imagepath + new_row[dest_key]
 
@@ -209,7 +216,9 @@ def mapRow(row):
     base_model_name = row["Productname"].split(" ")[1]
     # find all filenames that exsist in /source/images with the base_model_name
     product_images = []
-    os.chdir('./source/images')
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    image_dir = os.path.join(BASE_DIR, "source/images")
+    os.chdir(image_dir)
     current_handle = new_row["Handle"]
     new_row["Handle"] = [current_handle]
     for file in glob.glob('base_model_name*'):
@@ -218,7 +227,7 @@ def mapRow(row):
       new_row["Handle"].push(current_handle)
 
     # for output into shopify, every of these images needs to have a separate row in csv
-    new_row['image'] = product_images
+    new_row['Image Src'] = product_images
 
   return new_row
 
