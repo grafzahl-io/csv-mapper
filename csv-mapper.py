@@ -14,13 +14,9 @@
 ## values of the source fields. e.g. Artikelkategory in source file with IDs
 ## are mapped by defining the destination field key (category_id) in this 
 ## file and adding an object as value and map key=source value=destination.
-## destination would be the gunatic category key
-##
-## Start by executing:
-## $> csv-mapper.py sourcefile.csv destinationfilename.csv
 ##
 ## Example
-## python3 csv-mapper.py source_file.csv destination_file.csv --imagepath="https://yourhost.com/temp/" --imagefield="image"
+## python3 csv-mapper.py source/source_file.csv dsit/destination_file.csv --imagepath="https://yourhost.com/temp/" --imagefield="image"
 import csv
 import sys
 import collections
@@ -35,7 +31,7 @@ import glob
 # change this if the price format is not in german
 locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
 
-parser=argparse.ArgumentParser(description='example: python3 csv-mapper.py source_file.csv destination_file.csv --imagepath="http://google.de/" --imagefield="image"')
+parser=argparse.ArgumentParser(description='example: python3 csv-mapper.py source/source_file.csv dist/destination_file.csv --imagepath="http://google.de/" --imagefield="image"')
 parser.add_argument('sourcefile', help='filepath to the source where the data is mapped from')
 parser.add_argument('destinationfile', help='filepath to the destination file')
 parser.add_argument("-imgp", "--imagepath", help='Adds this path to all imported image filenames')
@@ -47,6 +43,7 @@ destinationfile=options.destinationfile
 imagepath=options.imagepath
 imagefield=options.imagefield
 
+# the dist / target csv header
 dataheader=[
   "Handle",
   "Title",
@@ -240,13 +237,13 @@ def mapRow(row):
     new_row["Handle"] = [current_handle]
 
     for file in glob.glob(base_model_name + '*'):
-      product_images.append(file)
+      product_images.append(imagepath + file)
       # also push the handle again @todo attention this has relations to variable config
       new_row["Handle"].append(current_handle)
 
     # for output into shopify, every of these images needs to have a separate row in csv
     # @todo this is related to config and hard coded: move this type of compilation fields into a config layer
-    new_row['Image Src'] = imagepath + product_images
+    new_row['Image Src'] = product_images
 
   return new_row
 
@@ -267,11 +264,40 @@ def startMapping():
           # format price to german locale (only for starshooter)?
           row = mapRow(source_row)
           if row:
-            csvout.writerow(row)
+            # csvout.writerow(row)
+
+            # check if the any field contains a list, to write a new row by id (handle) for every list item
+            ind = 0
+            # check longest list in rows
+            for col in row.values():
+              if type(col) == list:
+                if len(col) > ind:
+                  ind = len(col)
+
+            print(ind)
+
+            while ind >= 0:
+              additional = []
+              if ind == 0:
+                for col in row.values():
+                  if type(col) == list and len(col):
+                    additional.append(col[0])
+                  else:
+                    additional.append(col)
+              else:
+                for col in row.values():
+                  if type(col) == list and len(col) > ind:
+                    additional.append(col[ind])
+                  else:
+                    additional.append("")
+              # write
+              ind = ind - 1
+              fullrow = dict(zip(row.keys(), additional))
+              csvout.writerow(fullrow)
+
+                
 
         print("Mapped " + str(index + 1) + " source data items.")
-    # rsync /image folder with temp on gunatic folder
-    #os.system("rsync -avz ./images/* root@gunatic.com:/var/www/html/temp")
     #split large csv into multople files
     split(open(distfile_fullpath, 'r'), ',', 400)
 
