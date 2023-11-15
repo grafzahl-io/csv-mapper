@@ -154,8 +154,7 @@ def applyMapped(new_row, dest_key, source_value, value_mappings, imagefield, ima
     if dest_key in value_mappings:
       if source_value in value_mappings[dest_key]:
         new_row[dest_key] = value_mappings[dest_key][source_value]
-        
-  print(new_row)
+
   if dest_key == imagefield and imagepath:
     new_row[dest_key] = imagepath + new_row[dest_key]
 
@@ -196,7 +195,21 @@ def mapRow(row):
       res = findRowToMerge(row, row[merge_c["matching-rule-in-main"]["column"]], merge_c["related-data-file-id-column"], merge_c["matching-rule-in-main"]["operator"], merge_data)
       # map res and put into new row
       if res:
-        new_row = new_row + res
+        header = merge_data[0]
+        # @todo mapping through available methods again to inject the related data
+        related_row = dict(zip(header, res))
+        print(related_row)
+        try:
+          for mapped in mapping:
+            source_value = related_row[mapped]
+            dest_key = mapping[mapped]
+            if type(dest_key) == str:
+              applyMapped(new_row, dest_key, source_value, value_mappings, imagefield, imagepath)
+            elif type(dest_key) == list:
+              for multi_key in dest_key:
+                applyMapped(new_row, multi_key, source_value, value_mappings, imagefield, imagepath)
+        except KeyError:
+          print("The key from the mapping named does not exist for related")
 
   try:
     for mapped in mapping:
@@ -209,6 +222,10 @@ def mapRow(row):
           applyMapped(new_row, multi_key, source_value, value_mappings, imagefield, imagepath)
   except KeyError:
     print("The key from the mapping named does not exist")
+
+  # compile for field column
+  product_name_parts = row["Productname"].lower().split(" ")
+  new_row['Handle'] = product_name_parts[0] + "-" + product_name_parts[1]
 
   # randomly set hp features
   if row["Productname"]:
@@ -254,7 +271,7 @@ def startMapping():
     # rsync /image folder with temp on gunatic folder
     #os.system("rsync -avz ./images/* root@gunatic.com:/var/www/html/temp")
     #split large csv into multople files
-    split(open(destinationfile, 'r'), ',', 400)
+    split(open(distfile_fullpath, 'r'), ',', 400)
 
 def split(filehandler, delimiter=',', row_limit=1000,
           output_name_template='output_%s.csv', output_path='.', keep_headers=True):
