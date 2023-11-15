@@ -30,3 +30,6 @@ python ./csv-mapper.py ./source/source_file.csv ./dist/destination_file.csv --im
 
 ### improvement plans
 - needs to be improved an parametrized at many points
+- add new layers to make current hardcoded data configurable
+  - e.g. fields that are compiled with different parts of the source data
+  - e.g. the automatic search for available images found by specified name pattern

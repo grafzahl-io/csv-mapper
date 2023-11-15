@@ -245,6 +245,7 @@ def mapRow(row):
       new_row["Handle"].append(current_handle)
 
     # for output into shopify, every of these images needs to have a separate row in csv
+    # @todo this is related to config and hard coded: move this type of compilation fields into a config layer
     new_row['Image Src'] = imagepath + product_images
 
   return new_row
