@@ -210,14 +210,13 @@ def mapRow(row):
         header = merge_data[0]
         # @todo mapping through available methods again to inject the related data
         related_row = dict(zip(header, res))
-        # print(related_row)
+
         for mapped in mapping.keys():
           if mapped in related_row:
             source_value = related_row[mapped]
             dest_key = mapping[mapped]
             if source_value:
               new_row[dest_key] = source_value
-              print(dest_key + " -> " + source_value)
 
   # compile for field column
   product_name_parts = row["Productname"].lower().split(" ")
