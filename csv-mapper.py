@@ -116,6 +116,7 @@ def getMergeConfig():
   merge_config = json.load(merge_config_file)
   return merge_config
 
+# new_row, productname, arti,elnummer, contains, relatedrow, 
 def findRowToMerge(row, searchterm, search_in, operator, targetrows):
   # use second csv to find a matching row to merge into
   header = targetrows[0]
@@ -178,36 +179,6 @@ def mapRow(row):
     else:
       new_row[statics] = static_fields[statics]
 
-  # merge mapped
-  merge_config = getMergeConfig()
-  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-  if len(merge_config):
-    for merge_c in merge_config:
-      relatedfile_fullpath = os.path.join(BASE_DIR,merge_c["related-data-file"])
-      merge_file = open(relatedfile_fullpath)
-      csv_data = csv.reader(merge_file, delimiter=",")
-      merge_data = list(csv_data)
-
-      # search for matching data 
-      res = findRowToMerge(row, row[merge_c["matching-rule-in-main"]["column"]], merge_c["related-data-file-id-column"], merge_c["matching-rule-in-main"]["operator"], merge_data)
-      # map res and put into new row
-      if res:
-        header = merge_data[0]
-        # @todo mapping through available methods again to inject the related data
-        related_row = dict(zip(header, res))
-        # print(related_row)
-        try:
-          for mapped in mapping:
-            source_value = related_row[mapped]
-            dest_key = mapping[mapped]
-            if type(dest_key) == str:
-              applyMapped(new_row, dest_key, source_value, value_mappings, imagefield, imagepath)
-            elif type(dest_key) == list:
-              for multi_key in dest_key:
-                applyMapped(new_row, multi_key, source_value, value_mappings, imagefield, imagepath)
-        except KeyError:
-          print("The key from the mapping named does not exist for related")
-
   try:
     for mapped in mapping:
       source_value = row[mapped]
@@ -219,6 +190,34 @@ def mapRow(row):
           applyMapped(new_row, multi_key, source_value, value_mappings, imagefield, imagepath)
   except KeyError:
     print("The key from the mapping named does not exist")
+
+  # merge mapped injection from another file
+  merge_config = getMergeConfig()
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  if len(merge_config):
+    for merge_c in merge_config:
+      relatedfile_fullpath = os.path.join(BASE_DIR,merge_c["related-data-file"])
+      merge_file = open(relatedfile_fullpath)
+      csv_data = csv.reader(merge_file, delimiter=",")
+      merge_data = list(csv_data)
+
+      # search for matching data 
+      matching_product_nameparts = row[merge_c["matching-rule-in-main"]["column"]].split(" ")
+      search_for = matching_product_nameparts[0] + " " + matching_product_nameparts[1]
+      res = findRowToMerge(row, search_for, merge_c["related-data-file-id-column"], merge_c["matching-rule-in-main"]["operator"], merge_data)
+      # map res and put into new row
+      if res:
+        header = merge_data[0]
+        # @todo mapping through available methods again to inject the related data
+        related_row = dict(zip(header, res))
+        # print(related_row)
+        for mapped in mapping.keys():
+          if mapped in related_row:
+            source_value = related_row[mapped]
+            dest_key = mapping[mapped]
+            if source_value:
+              new_row[dest_key] = source_value
+              print(dest_key + " -> " + source_value)
 
   # compile for field column
   product_name_parts = row["Productname"].lower().split(" ")
@@ -273,8 +272,6 @@ def startMapping():
               if type(col) == list:
                 if len(col) > ind:
                   ind = len(col)
-
-            print(ind)
 
             while ind >= 0:
               additional = []
