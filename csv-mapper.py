@@ -273,7 +273,7 @@ def startMapping():
                   ind = len(col)
 
             i = 0
-            while i <= ind:
+            while i < ind:
               additional = []
               if i == 0:
                 for col in row.values():
