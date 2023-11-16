@@ -272,9 +272,10 @@ def startMapping():
                 if len(col) > ind:
                   ind = len(col)
 
-            while ind >= 0:
+            i = 0
+            while i <= ind:
               additional = []
-              if ind == 0:
+              if i == 0:
                 for col in row.values():
                   if type(col) == list and len(col):
                     additional.append(col[0])
@@ -282,12 +283,12 @@ def startMapping():
                     additional.append(col)
               else:
                 for col in row.values():
-                  if type(col) == list and len(col) > ind:
-                    additional.append(col[ind])
+                  if type(col) == list and len(col) > i:
+                    additional.append(col[i])
                   else:
                     additional.append("")
               # write
-              ind = ind - 1
+              i = i + 1
               fullrow = dict(zip(row.keys(), additional))
               csvout.writerow(fullrow)
 
