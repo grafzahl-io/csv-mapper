@@ -151,14 +151,14 @@ def filterSourceRows(row):
   filtersource_config = getFilterSourceConfig()
 
   for filter_data in filtersource_config:
-    column = filter_data.column
-    condition = filter_data.condition
-    values = filter_data.values
+    column = filter_data["column"]
+    condition = filter_data["condition"]
+    values = filter_data["values"]
 
     if row[column]:
       if condition == "contains-one-of":
         for val in values:
-          if val in ow[column]:
+          if val in row[column]:
             return True
 
     return False
@@ -247,6 +247,8 @@ def mapRow(row):
   product_name_parts = row["Productname"].lower().split(" ")
   new_row['Handle'] = product_name_parts[0] + "-" + product_name_parts[1]
 
+  # map category "Geschlecht" (UNISEX,MEN,WOMEN)
+
   # randomly set hp features
   if row["Productname"]:
     # get the second word of product name to get image name
@@ -283,15 +285,12 @@ def startMapping():
 
         for idx, source_row in enumerate(csvin):
           index = idx
-
-          # add source filter
-          if filterSourceRows(row):
-            continue
-
-          # format price to german locale (only for starshooter)?
           row = mapRow(source_row)
+
           if row:
-            # csvout.writerow(row)
+            # add source filter
+            if not filterSourceRows(row):
+              continue
 
             # check if the any field contains a list, to write a new row by id (handle) for every list item
             ind = 0
