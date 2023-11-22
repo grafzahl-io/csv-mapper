@@ -243,6 +243,12 @@ def mapRow(row):
             if source_value:
               new_row[dest_key] = source_value
 
+              # apply list mapping on merged values
+              if bool(value_mappings):
+                if dest_key in value_mappings:
+                  if source_value in value_mappings[dest_key]:
+                    new_row[dest_key] = value_mappings[dest_key][source_value]
+
   # compile for field column
   product_name_parts = row["Productname"].lower().split(" ")
   new_row['Handle'] = product_name_parts[0] + "-" + product_name_parts[1]
