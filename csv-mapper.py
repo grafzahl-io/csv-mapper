@@ -116,6 +116,14 @@ def getMergeConfig():
   merge_config = json.load(merge_config_file)
   return merge_config
 
+def getFilterSourceConfig():
+  # get teh filter source config
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  filtersource_config_handle = os.path.join(BASE_DIR, "config/csv-filter-source.json")
+  filtersource_config_file = open(filtersource_config_handle)
+  filtersource_config = json.load(filtersource_config_file)
+  return filtersource_config
+
 # new_row, productname, arti,elnummer, contains, relatedrow, 
 def findRowToMerge(row, searchterm, search_in, operator, targetrows):
   # use second csv to find a matching row to merge into
@@ -137,6 +145,23 @@ def getAvailableStatics():
   static_file = open(static_mapping_handle)
   static_fields = json.load(static_file)
   return static_fields
+
+# fitler source row by specific conditions
+def filterSourceRows(row):
+  filtersource_config = getFilterSourceConfig()
+
+  for filter_data in filtersource_config:
+    column = filter_data.column
+    condition = filter_data.condition
+    values = filter_data.values
+
+    if row[column]:
+      if condition == "contains-one-of":
+        for val in values:
+          if val in ow[column]:
+            return True
+
+    return False
 
 def mapValues():
   BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -258,6 +283,10 @@ def startMapping():
 
         for idx, source_row in enumerate(csvin):
           index = idx
+
+          # add source filter
+          if filterSourceRows(row):
+            continue
 
           # format price to german locale (only for starshooter)?
           row = mapRow(source_row)
